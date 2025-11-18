@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Triángulos</title>
+<style>
+/* ==============================
+   VARIABLES Y TEMA
+============================== */
+:root {
+  --bg-page: #fff0f5;           /* fondo general romántico */
+  --bg-board: #ffffff;           /* fondo del tablero */
+  --line-color: #ff6f91;         /* líneas normales */
+  --ghost-line: rgba(255,111,145,0.5); /* línea fantasma */
+  --triangle-fill: rgba(255,182,193,0.3); /* relleno triángulos */
+  --point-color: #ff355e;        /* color de los puntos */
+  --text-color: #333;
+  --hud-bg: #ffffffdd;           /* topbar */
+  --hud-border: #ff6f91;
+  --btn-bg: #ff6f91;
+  --btn-hover: #ff4c72;
+  --btn-color: #fff;
+}
+
+/* ==============================
+   BODY
+============================== */
+body {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 400;
+  background: var(--bg-page);
+  color: var(--text-color);
+}
+
+/* ==============================
+   TABLERO / CANVAS
+============================== */
+#board {
+  border: 2px solid var(--hud-border);
+  background: var(--bg-board);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  display: block;
+  margin: 12px auto;
+  cursor: crosshair;
+}
+
+/* ==============================
+   TOPBAR / HUD
+============================== */
+.topbar {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--hud-bg);
+  border-radius: 12px;
+  border: 1px solid var(--hud-border);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  font-size: 14px;
+}
+
+/* COLOR DE JUGADOR */
+.topbar div span {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  margin-left: 6px;
+}
+
+/* TURNO */
+#turnBox {
+  font-weight: bold;
+  font-size: 15px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* ==============================
+   BOTONES
+============================== */
+.button {
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.button-primary {
+  background: var(--btn-bg);
+  color: var(--btn-color);
+}
+
+.button-primary:hover {
+  background: var(--btn-hover);
+  transform: translateY(-2px);
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+/* ==============================
+   MENSAJES (si quieres agregar info/error)
+============================== */
+.info {
+  font-size: 14px;
+  color: var(--text-color);
+  margin-top: 6px;
+}
+
+.error {
+  color: #b00020;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+/* ==============================
+   ESTILOS DE PUNTOS, LÍNEAS Y TRIÁNGULOS
+   (estos se aplican en JS al dibujar en canvas)
+============================== */
+/* Línea normal */
+.line {
+  stroke: var(--line-color);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+/* Línea fantasma */
+.ghost-line {
+  stroke: var(--ghost-line);
+  stroke-width: 2;
+  stroke-dasharray: 5,5;
+}
+
+/* Triángulo relleno */
+.triangle {
+  fill: var(--triangle-fill);
+  stroke: var(--line-color);
+  stroke-width: 2;
+}
+
+/* Puntos */
+.point {
+  fill: var(--point-color);
+  stroke: var(--line-color);
+  stroke-width: 2;
+}
+
+/* Símbolos dentro de triángulos */
+.triangle-symbol {
+  font-size: 22px;
+  text-align: center;
+  text-baseline: middle;
+  fill: #ff355e;
+  font-weight: bold;
+}
+
+</style>
+</head>
+<body>
+
+<h2>Triángulos — Sala {{ room }}</h2>
+
+<div class="topbar">
+  <div>Jugador: <strong>{{ name }}</strong> ({{ symbol }}) <span style="width:18px;height:18px;display:inline-block;background:{{ color }};border-radius:4px;"></span></div>
+  <div id="turnBox">Turno: ...</div>
+  <button class="button button-primary" onclick="navigator.clipboard.writeText('{{ room }}')">Copiar ID</button>
+  <button class="button" onclick="window.location.href='/'">Volver al lobby</button>
+</div>
+
+<canvas id="board" width="700" height="650"></canvas>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const ROOM="{{ room }}";
+const PLAYER_NAME="{{ name }}";
+const PLAYER_SYMBOL="{{ symbol }}";
+const PLAYER_COLOR="{{ color }}";
+</script>
+<script src="{{ url_for('static', filename='js/triangles.js') }}"></script>
+
+</body>
+</html>

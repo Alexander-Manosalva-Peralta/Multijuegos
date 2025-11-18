@@ -1,0 +1,20 @@
+/* static/css/style.css */
+body {
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: #f3f6fb;
+  color: #222;
+  margin: 0;
+  padding: 0;
+}
+h1, h2 { margin: 10px 0; }
+input[type="text"], input[type="search"], input[type="password"], input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+button { font-family: inherit; }
+.btn { padding:8px 12px; border-radius:8px; border:0; cursor:pointer; }
+.btn.primary { background:#2d9cdb; color:white; }
+.btn.secondary { background:#333; color:white; }
+.card { background:#fff; padding:12px; border-radius:10px; }

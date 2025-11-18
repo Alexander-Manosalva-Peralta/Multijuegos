@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Chocolatito Stop</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/stop.css') }}">
+    <style>
+        /* Estilos básicos para la tabla de resultados (puedes mover esto a stop.css) */
+        #resultsContainer table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        #resultsContainer th, #resultsContainer td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #resultsContainer th {
+            background-color: #f2f2f2;
+        }
+        .category {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chocolatito Stop</h1>
+    <h2>Jugador: {{ name }}</h2>
+
+    <div style="margin-bottom: 20px;">
+        <button id="copyRoomBtn">Copiar ID de sala</button>
+        <button id="backLobbyBtn">Volver al lobby</button>
+        <span>ID de sala: <b id="roomId">{{ room }}</b></span>
+    </div>
+
+    <div>
+        <button id="generateLetterBtn">Generar letra</button>
+        <span>Letra actual: <span id="currentLetter"></span></span>
+    </div>
+
+    <div id="categoriesContainer">
+        {% for cat in categories %}
+            <div class="category">
+                <label>{{ cat }}:</label>
+                <input type="text" data-category="{{ cat }}" class="answerInput" />
+            </div>
+        {% endfor %}
+    </div>
+
+    <button id="stopBtn">Chocolatito Stop</button>
+
+    <h3>Resultados de la Ronda:</h3>
+    <div id="resultsContainer"></div>
+
+    <script>
+        const socket = io();
+        const room = "{{ room }}";
+        const name = "{{ name }}";
+
+        socket.emit("join_stop", {room, name});
+
+        const generateLetterBtn = document.getElementById("generateLetterBtn");
+        const currentLetterSpan = document.getElementById("currentLetter");
+        const stopBtn = document.getElementById("stopBtn");
+        const resultsContainer = document.getElementById("resultsContainer");
+        const categories = document.querySelectorAll(".answerInput"); // Obtener todos los inputs
+
+        const copyRoomBtn = document.getElementById("copyRoomBtn");
+        const backLobbyBtn = document.getElementById("backLobbyBtn");
+
+        let roundActive = false;
+        let stopTimer = null; // Para el temporizador de stop
+
+        // Función para habilitar/deshabilitar inputs
+        function enableInputs(enable) {
+            categories.forEach(input => input.disabled = !enable);
+        }
+
+        // Socket: estado inicial
+        socket.on("stop_state", (data) => {
+            currentLetterSpan.textContent = data.current_letter || "N/A";
+            roundActive = data.round_active;
+            enableInputs(roundActive);
+            // Mostrar estado inicial de jugadores si es necesario
+        });
+
+        // Socket: nueva letra
+        socket.on("new_letter_stop", (data) => {
+            currentLetterSpan.textContent = data.letter;
+            roundActive = true;
+            enableInputs(true);
+            categories.forEach(input => input.value = ""); // Limpiar inputs
+            resultsContainer.innerHTML = "";
+            stopBtn.textContent = "Chocolatito Stop";
+            stopBtn.disabled = false;
+        });
+
+        // Socket: ALGUIEN presionó STOP, inicia el conteo
+        socket.on("stop_countdown_started", (data) => {
+            let seconds = data.seconds;
+
+            // Deshabilitar inputs de inmediato para todos
+            enableInputs(false);
+
+            // Deshabilitar el botón STOP para evitar spam
+            if (stopBtn.textContent === "Chocolatito Stop") {
+                 stopBtn.disabled = true;
+            }
+
+            // Limpiar cualquier temporizador anterior
+            if(stopTimer) clearInterval(stopTimer);
+
+            stopTimer = setInterval(()=>{
+                stopBtn.textContent = ¡${data.stopper} dijo STOP! ${seconds}s;
+                seconds--;
+                if(seconds < 0){
+                    clearInterval(stopTimer);
+                    stopTimer = null;
+                    stopBtn.textContent = "Esperando resultados...";
+                }
+            },1000);
+        });
+
+        // Socket: resultados de ronda
+        socket.on("round_result", (data) => {
+            roundActive = false;
+
+            const playersMap = data.players;
+            const players = Object.values(playersMap);
+
+            if (players.length === 0) {
+                resultsContainer.innerHTML = "No hay jugadores conectados.";
+                return;
+            }
+
+            // Obtener categorías del HTML
+            const categoryList = Array.from(categories).map(input => input.dataset.category);
+
+            let html = <h4>Resultados Finales - Letra: ${data.letter}</h4>;
+            html += '<table><thead><tr><th>Categoría</th>';
+
+            // Encabezados de jugadores
+            players.forEach(p => {
+                html += <th>${p.name} (Total: ${p.total})</th>;
+            });
+            html += '</tr></thead><tbody>';
+
+            // Filas de categorías
+            categoryList.forEach(cat => {
+                html += <tr><td><strong>${cat}</strong></td>;
+
+                // Celdas de respuestas y puntajes
+                players.forEach(p => {
+                    const answer = p.answers[cat] || "";
+                    const score = p.answers[${cat}_score] !== undefined ? p.answers[${cat}_score] : 0;
+
+                    // Mostrar respuesta + puntaje (esto es lo que querías)
+                    html += <td>${answer} (${score} pts)</td>;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+
+            resultsContainer.innerHTML = html;
+            enableInputs(false);
+            stopBtn.textContent = "Ronda terminada";
+        });
+
+        // Botón generar letra
+        generateLetterBtn.addEventListener("click", ()=>{
+            if (roundActive) return alert("La ronda está activa. Espera a que alguien diga STOP.");
+            socket.emit("generate_letter_stop", {room});
+        });
+
+        // Botón Chocolatito Stop
+        stopBtn.addEventListener("click", ()=>{
+            if(!roundActive) return;
+
+            const answers = {};
+            const letter = currentLetterSpan.textContent.trim().toUpperCase();
+
+            // 1. Recoger respuestas y enviar (solo si cumplen con la letra, si no, se envía vacío)
+            categories.forEach(input=>{
+                const cat = input.dataset.category;
+                const value = input.value.trim();
+
+                if(value && value.toUpperCase().startsWith(letter)){
+                    answers[cat] = value;
+                } else {
+                    // Si no empieza con la letra o está vacío, se envía vacío (0 pts)
+                    answers[cat] = "";
+                }
+            });
+
+            // Notificar al servidor que el jugador terminó y enviar respuestas
+            socket.emit("submit_answers", {room, answers});
+
+            // 2. Notificar al servidor para iniciar el temporizador de final de ronda
+            stopBtn.textContent = "¡STOP! Esperando...";
+            stopBtn.disabled = true;
+            socket.emit("player_stopped", {room, name});
+        });
+
+        // Copiar ID de sala
+        copyRoomBtn.addEventListener("click", ()=>{
+            navigator.clipboard.writeText(room)
+                .then(()=>alert("ID de sala copiado al portapapeles"))
+                .catch(()=>alert("Error al copiar ID"));
+        });
+
+        // Volver al lobby
+        backLobbyBtn.addEventListener("click", ()=>{
+            window.location.href = "/";
+        });
+
+    </script>
+</body>
+</html>

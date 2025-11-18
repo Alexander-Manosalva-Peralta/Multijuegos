@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cuadrados</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+<style>
+  body {
+    text-align:center;
+    background:#fff0f5;
+    font-family:'Helvetica Neue', Arial, sans-serif;
+    margin:0; padding:0;
+  }
+
+  #board {
+    border:2px solid #ff6f91;
+    background:#fff;
+    display:block;
+    margin:20px auto;
+    border-radius:16px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.15);
+    cursor:crosshair;
+  }
+
+  .topbar {
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    margin:12px auto;
+    align-items:center;
+    flex-wrap:wrap;
+    padding:8px 12px;
+    background:#ffffffdd;
+    border-radius:12px;
+    border:1px solid #ff6f91;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    font-size:14px;
+  }
+
+  #turnBox {
+    font-weight:bold;
+    font-size:15px;
+    padding:4px 8px;
+    border-radius:8px;
+    background:#ff6f91;
+    color:#fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.12);
+  }
+
+  .button {
+    padding:8px 14px;
+    border-radius:12px;
+    border:none;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:500;
+    transition:all 0.2s ease;
+  }
+
+  .button-primary {
+    background:#ff6f91;
+    color:#fff;
+  }
+
+  .button-primary:hover {
+    background:#ff4c72;
+    transform:translateY(-2px);
+  }
+
+  .infoText {
+    text-align:center;
+    margin-top:6px;
+    font-size:14px;
+    color:#555;
+  }
+</style>
+</head>
+<body>
+
+<h2>Cuadrados — Sala {{ room }}</h2>
+
+<div class="topbar">
+  <div>Jugador: <strong>{{ name }}</strong> ({{ symbol }}) <span style="background:{{ color }}"></span></div>
+  <div id="turnBox">Turno: ...</div>
+  <button class="button button-primary" onclick="navigator.clipboard.writeText('{{ room }}')">Copiar ID</button>
+  <button class="button" onclick="window.location.href='/'">Volver al lobby</button>
+</div>
+
+<canvas id="board" width="600" height="600"></canvas>
+<div class="infoText" id="infoText">Haz clic en dos puntos adyacentes para dibujar una línea</div>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+
+<script>
+const ROOM = "{{ room }}";
+const PLAYER_NAME = "{{ name }}";
+const PLAYER_SYMBOL = "{{ symbol }}";
+const PLAYER_COLOR = "{{ color }}";
+</script>
+
+<script src="{{ url_for('static', filename='js/squares.js') }}"></script>
+<script>
+if(typeof initSquareGame === 'function'){
+    initSquareGame(ROOM, PLAYER_NAME, PLAYER_SYMBOL, PLAYER_COLOR);
+}
+</script>
+
+</body>
+</html>

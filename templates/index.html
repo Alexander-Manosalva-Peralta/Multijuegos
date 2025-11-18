@@ -1,0 +1,210 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Multijuegos - Lobby</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .symbol-btn { font-size: 28px; padding: 8px 14px; margin:6px; border-radius:8px; border:2px solid #ccc; cursor:pointer; background:#fafafa; }
+    .symbol-btn.active { border-color:#2ecc71; background:#eaffea; transform: translateY(-2px); }
+    .container { max-width:520px; margin:30px auto; padding:18px; text-align:center; }
+    .card { background: #fff; padding:14px; margin-bottom:12px; border-radius:10px; box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+    .btn { padding:12px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
+    .btn.primary { background:#2d9cdb; color:#fff; width:100%; margin-top:8px; }
+    .btn.secondary { background:#444; color:#fff; width:100%; margin-top:10px; }
+    .game-select { display:flex; gap:8px; justify-content:center; margin-top:12px; flex-wrap:wrap; }
+    .game-select button { padding:10px 12px; border-radius:8px; border:1px solid #ddd; cursor:pointer; background:#fff; }
+    .muted { color:#666; font-size:14px; }
+    .color-swatch { display:inline-block; width:18px; height:18px; border-radius:4px; border:1px solid #ccc; vertical-align:middle; margin-left:8px; }
+    .room-row { display:flex; gap:8px; align-items:center; justify-content:center; margin-top:10px; }
+    .small { font-size:13px; color:#666; }
+    input[type="text"], input[type="color"] { padding:8px; border-radius:6px; border:1px solid #ccc; width:100%; box-sizing:border-box; }
+    .inline-input { width: calc(100% - 100px); display:inline-block; vertical-align:middle; }
+    .copy-btn { padding:8px 10px; border-radius:8px; background:#2d9cdb; color:#fff; border:none; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 Multijuegos</h1>
+
+    <div id="mainForm" class="card">
+      <label>Tu nombre</label><br>
+      <input id="playerName" type="text" placeholder="Ej: Yojan" style="margin-top:8px;"><br>
+
+      <p style="margin-top:10px;">Elige tu símbolo</p>
+      <div id="symbols">
+        <button class="symbol-btn" data-symbol="X">X</button>
+        <button class="symbol-btn" data-symbol="O">O</button>
+        <button class="symbol-btn" data-symbol="❤️">❤️</button>
+        <button class="symbol-btn" data-symbol="🔺">🔺</button>
+        <button class="symbol-btn" data-symbol="⭐">⭐</button>
+      </div>
+
+      <input type="hidden" id="selectedSymbol">
+
+      <p style="margin-top:12px;">Color de tu línea</p>
+      <input id="playerColor" type="color" value="#2d9cdb" style="margin-top:6px;">
+
+      <div style="margin-top:12px;">
+        <button id="createBtn" class="btn primary">Crear partida</button>
+        <button id="showJoin" class="btn secondary" type="button">Unirse a partida</button>
+      </div>
+
+      <div id="joinBox" style="display:none; margin-top:10px;">
+        <input id="joinRoomId" type="text" placeholder="ID de la partida" style="margin-top:8px;">
+        <button id="joinBtn" class="btn primary" style="margin-top:8px;">Unirse</button>
+      </div>
+    </div>
+
+    <!-- Lobby -->
+    <div id="lobby" class="card" style="display:none;">
+      <h3>Sala: <span id="roomIdText"></span></h3>
+      <div class="room-row">
+        <button id="copyRoom" class="copy-btn">Copiar ID</button>
+        <div id="roomCopied" style="display:none; color: #2d9cdb; font-weight:600;">¡Copiado!</div>
+      </div>
+      <p class="muted">Comparte este ID con la otra persona para que se una.</p>
+
+      <p><strong>Tus datos:</strong> <span id="youData"></span>
+        <span id="youSwatch" class="color-swatch" title="Tu color" style="margin-left:8px;"></span>
+      </p>
+
+      <div style="margin-top:8px;">
+        <p>Elijan el juego:</p>
+        <div class="game-select">
+          <button data-game="triangles">Triángulos</button>
+          <button data-game="squares">Cuadrados</button>
+          <button data-game="stop">Chocolatito Stop</button>
+        </div>
+      </div>
+
+      <p style="margin-top:8px;" class="muted">Cuando ambos estén en la sala y hayan elegido el juego, entren al juego.</p>
+    </div>
+
+    <div id="errorBox" style="display:none;" class="card" role="alert"></div>
+
+  </div>
+
+<script>
+  // ----- símbolos -----
+  const symbolBtns = document.querySelectorAll('.symbol-btn');
+  let selectedSymbol = '';
+  symbolBtns.forEach(b => {
+    b.addEventListener('click', () => {
+      symbolBtns.forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      selectedSymbol = b.dataset.symbol;
+      document.getElementById('selectedSymbol').value = selectedSymbol;
+    });
+  });
+
+  // ----- mostrar join box -----
+  document.getElementById('showJoin').addEventListener('click', () => {
+    document.getElementById('joinBox').style.display = 'block';
+  });
+
+  // ----- crear partida -----
+  document.getElementById('createBtn').addEventListener('click', () => {
+    const name = document.getElementById('playerName').value.trim();
+    const color = document.getElementById('playerColor').value;
+    if (!name) return alert('Escribe tu nombre');
+    if (!selectedSymbol) return alert('Elige un símbolo');
+    // redirigir a create_room con name, symbol y color
+    const url = `/create_room?name=${encodeURIComponent(name)}&symbol=${encodeURIComponent(selectedSymbol)}&color=${encodeURIComponent(color)}`;
+    window.location.href = url;
+  });
+
+  // ----- unirse a sala -----
+  document.getElementById('joinBtn').addEventListener('click', () => {
+    const name = document.getElementById('playerName').value.trim();
+    const color = document.getElementById('playerColor').value;
+    const room = document.getElementById('joinRoomId').value.trim();
+    if (!name) return alert('Escribe tu nombre');
+    if (!selectedSymbol) return alert('Elige un símbolo');
+    if (!room) return alert('Escribe el ID de la sala');
+    const url = `/join_room?room=${encodeURIComponent(room)}&name=${encodeURIComponent(name)}&symbol=${encodeURIComponent(selectedSymbol)}&color=${encodeURIComponent(color)}`;
+    window.location.href = url;
+  });
+
+  // ----- manejar si la URL tiene room (lobby) -----
+  const params = new URLSearchParams(window.location.search);
+  const room = params.get('room');
+  const name = params.get('name') || '';
+  const symbol = params.get('symbol') || '';
+  const color = params.get('color') || '';
+
+  if (params.get('error')) {
+    const e = document.getElementById('errorBox');
+    e.style.display = 'block';
+    e.innerText = params.get('error');
+  }
+
+  if (room) {
+    // ocultar form inicial, mostrar lobby
+    document.getElementById('mainForm').style.display = 'none';
+    document.getElementById('lobby').style.display = 'block';
+    document.getElementById('roomIdText').innerText = room;
+    document.getElementById('youData').innerText = `${name || 'Anon'} · ${symbol || ''}`;
+    document.getElementById('youSwatch').style.background = color || '#000';
+
+    // activar visualmente el símbolo si lo hay
+    if (symbol) {
+      symbolBtns.forEach(b => {
+        if (b.dataset.symbol === symbol) {
+          b.classList.add('active');
+          selectedSymbol = symbol;
+          document.getElementById('selectedSymbol').value = selectedSymbol;
+        }
+      });
+    }
+
+    // configurar botones de juego para redirigir incluyendo color y name
+    document.querySelectorAll('.game-select button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const game = btn.dataset.game;
+        const target = `/game/${room}/${game}?name=${encodeURIComponent(name||'')}&symbol=${encodeURIComponent(symbol||'')}&color=${encodeURIComponent(color||'')}`;
+        window.location.href = target;
+      });
+    });
+
+    // copiar ID
+    document.getElementById('copyRoom').addEventListener('click', () => {
+      navigator.clipboard.writeText(room).then(() => {
+        const t = document.getElementById('roomCopied');
+        t.style.display = 'inline';
+        setTimeout(()=> t.style.display='none', 1200);
+      });
+    });
+  } else {
+    // Si no hay sala en la URL, intentar cargar selección previa (opcional)
+    try {
+      const saved = JSON.parse(localStorage.getItem('mj_last') || '{}');
+      if (saved.name) document.getElementById('playerName').value = saved.name;
+      if (saved.color) document.getElementById('playerColor').value = saved.color;
+      if (saved.symbol) {
+        symbolBtns.forEach(b => {
+          if (b.dataset.symbol === saved.symbol) b.click();
+        });
+      }
+    } catch(e){}
+  }
+
+  // Guardar selección cada vez que cambie (pequeña comodidad)
+  document.getElementById('playerColor').addEventListener('change', () => {
+    savePrefs();
+  });
+  document.getElementById('playerName').addEventListener('blur', () => {
+    savePrefs();
+  });
+
+  function savePrefs(){
+    const nameV = document.getElementById('playerName').value.trim();
+    const colorV = document.getElementById('playerColor').value;
+    const symV = document.getElementById('selectedSymbol').value;
+    localStorage.setItem('mj_last', JSON.stringify({name: nameV, color: colorV, symbol: symV}));
+  }
+</script>
+</body>
+</html>
